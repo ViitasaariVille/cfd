@@ -9,7 +9,7 @@ cd ${0%/*} || exit 1    # Run from this directory
 # ==========================
 BASE=base_case          # base case folder
 SOLVER=simpleFoam
-ANGLES="-50 0 50"
+ANGLES="-5 -4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10"
 NPROC=12
 AVG_WINDOW=100
 OUT=AoA_results.dat
