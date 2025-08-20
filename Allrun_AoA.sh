@@ -9,14 +9,15 @@ cd ${0%/*} || exit 1    # Run from this directory
 # ==========================
 BASE=base_case          # base case folder
 SOLVER=simpleFoam
-ANGLES="-5 -4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10"
+ANGLES="-4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10 11 12"
+#ANGLES="0"
 NPROC=12
 AVG_WINDOW=100
 OUT=AoA_results.dat
 
 #FORCE_PATCH="wing_surface"
-Aref=0.31
-lRef=0.271
+Aref=0.75
+lRef=0.5
 CofR="0.135 0 0"
 # ==========================
 
