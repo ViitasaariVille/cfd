@@ -9,19 +9,15 @@ cd ${0%/*} || exit 1    # Run from this directory
 # ==========================
 BASE=base_case          # base case folder
 SOLVER=simpleFoam
-ANGLES="-4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10 11 12"
+ANGLES="-50 -40 -30 -20 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 20 25 30 40 50 60 70 80 90"
 #ANGLES="0"
 NPROC=12
 AVG_WINDOW=100
-OUT=AoA_results.dat
 
-#FORCE_PATCH="wing_surface"
-Aref=0.75
-lRef=0.5
-CofR="0.135 0 0"
-# ==========================
-
-echo "# AoA  time_last  Cd_mean  Cl_mean  Cm_mean  Cd_last  Cl_last  Cm_last" > "$OUT"
+# Center of gravity
+xCG=0.32
+yCG=0.0
+zCG=1.0
 
 for A in $ANGLES; do
     CASE="AoA_${A}"
@@ -39,7 +35,9 @@ for A in $ANGLES; do
     # -----------------------
     # Assuming geometry is in constant/triSurface/airfoil.stl
     #transformPoints "Ry=$A" constant/geometry/uav.stl
-    surfaceTransformPoints "Ry=$A" constant/geometry/uav.stl constant/geometry/uav.stl
+    #surfaceTransformPoints "Ry=$A" constant/geometry/uav.stl constant/geometry/uav.stl
+    surfaceTransformPoints "translate=(-$xCG -$yCG -$zCG), Ry=$A, translate=($xCG $yCG $zCG)" constant/geometry/uav.stl constant/geometry/uav.stl
+
 
     # -----------------------
     # 3) Mesh creation
@@ -65,40 +63,6 @@ for A in $ANGLES; do
     # 6) Reconstruct results
     # -----------------------
     runApplication reconstructPar -latestTime
-
-    # -----------------------
-    # 7) Extract force coefficients
-    # -----------------------
-    coeffFile=$(ls -1 postProcessing/forceCoeffs/*/forceCoeffs.dat | tail -n1)
-
-    # Parse header
-    header=$(grep -m1 "^# Time" "$coeffFile")
-    colTime=1; colCm=2; colCd=3; colCl=4
-    i=1
-    for token in $header; do
-        case "$token" in
-            Time) colTime=$i ;;
-            Cm)   colCm=$i ;;
-            Cd)   colCd=$i ;;
-            Cl)   colCl=$i ;;
-        esac
-        i=$((i+1))
-    done
-
-    # Last line
-    lastLine=$(grep -v "^#" "$coeffFile" | tail -n1)
-    time_last=$(echo "$lastLine" | awk -v t=$colTime '{print $t}')
-    Cd_last=$(  echo "$lastLine" | awk -v c=$colCd  '{print $c}')
-    Cl_last=$(  echo "$lastLine" | awk -v c=$colCl  '{print $c}')
-    Cm_last=$(  echo "$lastLine" | awk -v c=$colCm  '{print $c}')
-
-    # Mean over last N samples
-    Cd_mean=$(grep -v "^#" "$coeffFile" | tail -n "$AVG_WINDOW" | awk -v c=$colCd '{s+=$c; n++} END{if(n) printf("%.8g", s/n)}')
-    Cl_mean=$(grep -v "^#" "$coeffFile" | tail -n "$AVG_WINDOW" | awk -v c=$colCl '{s+=$c; n++} END{if(n) printf("%.8g", s/n)}')
-    Cm_mean=$(grep -v "^#" "$coeffFile" | tail -n "$AVG_WINDOW" | awk -v c=$colCm '{s+=$c; n++} END{if(n) printf("%.8g", s/n)}')
-
-    # Append results
-    echo "$A  $time_last  $Cd_mean  $Cl_mean  $Cm_mean  $Cd_last  $Cl_last  $Cm_last" >> "../$OUT"
 
     cd ..
 done

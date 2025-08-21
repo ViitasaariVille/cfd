@@ -17,12 +17,12 @@ log             yes;
 patches         (motorBikeGroup);
 
 rho             rhoInf;      // Indicates incompressible
-rhoInf          1.225;           // Redundant for incompressible
+rhoInf          1.0;           // Redundant for incompressible
 liftDir         (0 0 1);
 dragDir         (1 0 0);
-CofR            (0 0 0);  // Axle midpoint on ground
+CofR            (0.32 0 1);  // Axle midpoint on ground
 pitchAxis       (0 1 0);
-magUInf         20;
+magUInf         70;
 lRef            0.271;       // MAC
 Aref            0.31;        // wing area
 

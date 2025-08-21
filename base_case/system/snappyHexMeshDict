@@ -36,8 +36,8 @@ geometry
     refinementBox
     {
         type box;
-        min (-1.0 -0.7 1.0);
-        max ( 5.0  0.7 4.5);
+        min (-1.0 -1.0 0.5);
+        max ( 2.0  1.0 1.5);
     }
 };
 
