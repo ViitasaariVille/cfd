@@ -9,9 +9,10 @@ cd ${0%/*} || exit 1    # Run from this directory
 # ==========================
 BASE=base_case          # base case folder
 SOLVER=simpleFoam
-ANGLES="-4 -3 -2 -1 0 1 2 3 4 5 6 7 8 9 10"   # degrees
-ACG="0.25 0.30 0.35 0.40 0.45 0.50"   # m
-SPEEDS="30"  # m/s
+ANGLES="-4 -2 0 2 4 6 8 10 12"   # degrees
+ACG="0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.45 0.5 0.55 0.6 0.65 0.7"   # m
+#ACG=$(seq 0.20 0.01 0.50) #m
+SPEEDS="20 30 40 50 60 70"  # m/s
 
 NPROC=12
 #AVG_WINDOW=100
@@ -29,64 +30,70 @@ for U in $SPEEDS; do
             #echo "=== AoA = ${A} deg ==="
             echo "=== U = ${U} m/s, AoA = ${A} deg , ACG = ${CG}==="
 
-            # -----------------------
-            # 1) Copy base case
-            # -----------------------
-            rm -rf "$CASE"
-            cp -r "$BASE" "$CASE"
-            cd "$CASE" || exit 1
+            if [ -d "$CASE" ]; then
+                echo "Folder $CASE already exists, skipping..."
+                continue   # skip to next loop iteration
+            else
+                echo "Creating $CASE..."
+                # -----------------------
+                # 1) Copy base case
+                # -----------------------
+                rm -rf "$CASE"
+                cp -r "$BASE" "$CASE"
+                cd "$CASE" || exit 1
 
-            # -----------------------
-            # Update flowVelocity in include/initialConditions
-            # -----------------------
-            sed -i "s/flowVelocity.*/flowVelocity    (${U} 0 0);/" 0/include/initialConditions
+                # -----------------------
+                # Update flowVelocity in include/initialConditions
+                # -----------------------
+                sed -i "s/flowVelocity.*/flowVelocity    (${U} 0 0);/" 0/include/initialConditions
 
-            # -----------------------
-            # Update magUInf in system/forceCoeffs
-            # -----------------------
-            sed -i "s/magUInf.*/magUInf        $U;/" system/forceCoeffs
+                # -----------------------
+                # Update magUInf in system/forceCoeffs
+                # -----------------------
+                sed -i "s/magUInf.*/magUInf        $U;/" system/forceCoeffs
 
-            # -----------------------
-            # Update Cofr in system/forceCoeffs
-            # -----------------------
-            sed -i "s/CofR.*/CofR        (${CG} 0 0);/" system/forceCoeffs
+                # -----------------------
+                # Update Cofr in system/forceCoeffs
+                # -----------------------
+                sed -i "s/CofR.*/CofR        (${CG} 0 0);/" system/forceCoeffs
 
-            # -----------------------
-            # 2) Rotate STL geometry before meshing
-            # -----------------------
-            # Assuming geometry is in constant/triSurface/airfoil.stl
-            #transformPoints "Ry=$A" constant/geometry/uav.stl
-            #surfaceTransformPoints "Ry=$A" constant/geometry/uav.stl constant/geometry/uav.stl
-            surfaceTransformPoints "translate=(-$xCG -$yCG -$zCG), Ry=$A, translate=($xCG $yCG $zCG)" constant/geometry/uav.stl constant/geometry/uav.stl
+                # -----------------------
+                # 2) Rotate STL geometry before meshing
+                # -----------------------
+                # Assuming geometry is in constant/triSurface/airfoil.stl
+                #transformPoints "Ry=$A" constant/geometry/uav.stl
+                #surfaceTransformPoints "Ry=$A" constant/geometry/uav.stl constant/geometry/uav.stl
+                surfaceTransformPoints "translate=(-$xCG -$yCG -$zCG), Ry=$A, translate=($xCG $yCG $zCG)" constant/geometry/uav.stl constant/geometry/uav.stl
 
 
-            # -----------------------
-            # 3) Mesh creation
-            # -----------------------
-            rm -rf processor*
-            runApplication surfaceFeatures
-            runApplication blockMesh
-            runApplication decomposePar -copyZero
-            runParallel snappyHexMesh
+                # -----------------------
+                # 3) Mesh creation
+                # -----------------------
+                rm -rf processor*
+                runApplication surfaceFeatures
+                runApplication blockMesh
+                runApplication decomposePar -copyZero
+                runParallel snappyHexMesh
 
-            # -----------------------
-            # 4) Decompose for solver
-            # -----------------------<
-            runApplication decomposePar -copyZero
+                # -----------------------
+                # 4) Decompose for solver
+                # -----------------------<
+                runApplication decomposePar -copyZero
 
-            # -----------------------
-            # 5) Run initialization and solver
-            # -----------------------
-            runParallel potentialFoam
-            runParallel $SOLVER
+                # -----------------------
+                # 5) Run initialization and solver
+                # -----------------------
+                runParallel potentialFoam
+                runParallel $SOLVER
 
-            # -----------------------
-            # 6) Reconstruct results
-            # -----------------------
-            runApplication reconstructPar -latestTime
+                # -----------------------
+                # 6) Reconstruct results
+                # -----------------------
+                runApplication reconstructPar -latestTime
 
-            cd ..
-            cd ..
+                cd ..
+                cd ..
+            fi
         done
     done
 done
